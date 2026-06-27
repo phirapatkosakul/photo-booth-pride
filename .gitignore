@@ -1,0 +1,6 @@
+cert.pem
+key.pem
+.lanip.txt
+deploy/
+.DS_Store
+/tmp/

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Photo Booth · Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg0:#0b0a12; --bg1:#12121b;
+    --glass:rgba(255,255,255,.05);
+    --glass-brd:rgba(255,255,255,.12);
+    --text:#f5f4f9; --muted:#a6a3b8;
+    /* 🏳️‍🌈 Pride rainbow */
+    --grad:linear-gradient(115deg,#e40303 0%,#ff8c00 20%,#ffed00 40%,#008026 60%,#004dff 80%,#750787 100%);
+    --grad-soft:linear-gradient(115deg,rgba(228,3,3,.14),rgba(255,237,0,.10),rgba(0,77,255,.12),rgba(117,7,135,.14));
+    --ring:#ff6ec7;
+    --shadow:0 20px 60px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Noto Sans Thai","Poppins",-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--text); min-height:100vh; position:relative; overflow-x:hidden;
+    display:flex; flex-direction:column; align-items:center; padding:34px 18px 70px;
+    background:var(--bg0);
+  }
+  /* แสง ambient เคลื่อนไหวเบาๆ */
+  body::before,body::after{content:"";position:fixed;border-radius:50%;filter:blur(100px);z-index:-1;opacity:.45;}
+  body::before{width:520px;height:520px;background:conic-gradient(#e40303,#ff8c00,#ffed00,#008026,#004dff,#750787,#e40303);
+    top:-170px;left:-130px;animation:float1 16s ease-in-out infinite;}
+  body::after{width:480px;height:480px;background:conic-gradient(#750787,#004dff,#008026,#ffed00,#ff8c00,#e40303,#750787);
+    bottom:-170px;right:-130px;animation:float2 18s ease-in-out infinite;}
+  @keyframes float1{50%{transform:translate(60px,50px) scale(1.1) rotate(40deg);}}
+  @keyframes float2{50%{transform:translate(-50px,-40px) scale(1.15) rotate(-40deg);}}
+
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .brand .logo{width:42px;height:42px;border-radius:13px;background:var(--grad);
+    display:grid;place-items:center;font-size:22px;box-shadow:0 8px 24px rgba(255,94,135,.45);}
+  h1{font-family:"Poppins";font-size:27px;font-weight:800;letter-spacing:.3px;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:24px;text-align:center;}
+  .flagbar{width:180px;height:6px;border-radius:6px;margin:10px 0 14px;background:var(--grad);
+    box-shadow:0 4px 16px rgba(117,7,135,.4);}
+
+  /* Stepper */
+  .stepper{display:flex;align-items:center;gap:8px;margin-bottom:26px;}
+  .stepper .st{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:600;}
+  .stepper .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    border:1.5px solid var(--glass-brd);font-size:13px;transition:.3s;}
+  .stepper .st.on .num{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 6px 16px rgba(255,94,135,.4);}
+  .stepper .st.on{color:var(--text);}
+  .stepper .bar{width:26px;height:2px;background:var(--glass-brd);border-radius:2px;}
+
+  .screen{display:none;width:100%;max-width:600px;flex-direction:column;align-items:center;gap:20px;
+    animation:rise .45s cubic-bezier(.2,.8,.2,1);}
+  .screen.active{display:flex;}
+  @keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+  .card{width:100%;background:var(--glass);border:1px solid var(--glass-brd);border-radius:24px;
+    padding:22px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--shadow);}
+  .card-title{font-family:"Poppins";font-weight:700;font-size:16px;margin-bottom:4px;}
+  .card-desc{color:var(--muted);font-size:13px;margin-bottom:18px;}
+
+  /* Controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;}
+  .field{position:relative;flex:1;min-width:200px;}
+  .field::after{content:"▾";position:absolute;right:16px;top:50%;transform:translateY(-50%);
+    color:var(--muted);pointer-events:none;font-size:12px;}
+  select{font-family:inherit;font-size:14px;width:100%;appearance:none;-webkit-appearance:none;
+    border-radius:14px;border:1px solid var(--glass-brd);background:rgba(255,255,255,.04);
+    color:var(--text);padding:13px 38px 13px 16px;cursor:pointer;transition:.2s;}
+  select:hover{border-color:rgba(255,255,255,.22);}
+  select:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px rgba(255,122,122,.18);}
+
+  button{font-family:"Poppins","Noto Sans Thai";font-size:15px;font-weight:600;border-radius:14px;
+    border:none;cursor:pointer;padding:14px 22px;transition:transform .12s cubic-bezier(.2,.8,.2,1),
+    box-shadow .2s,filter .2s,background .2s;display:inline-flex;align-items:center;gap:8px;justify-content:center;}
+  .btn-primary{background:var(--grad);color:#fff;box-shadow:0 10px 26px rgba(255,94,135,.4);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(255,94,135,.5);}
+  .btn-lg{padding:16px 30px;font-size:16px;min-width:220px;}
+  .secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--glass-brd);}
+  .secondary:hover{background:rgba(255,255,255,.14);transform:translateY(-2px);}
+  .ghost{background:transparent;color:var(--muted);border:1px solid var(--glass-brd);}
+  .ghost:hover{color:var(--text);border-color:rgba(255,255,255,.25);}
+  .icon-btn{padding:13px 15px;flex:0 0 auto;}
+  button:active{transform:scale(.96);}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;filter:grayscale(.3);}
+
+  /* Frame picker */
+  .frames-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;width:100%;}
+  .frame-card{position:relative;background:rgba(255,255,255,.03);border:1.5px solid var(--glass-brd);
+    border-radius:20px;padding:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:12px;
+    transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s,box-shadow .2s;overflow:hidden;}
+  .frame-card::before{content:"";position:absolute;inset:0;background:var(--grad-soft);opacity:0;transition:.25s;}
+  .frame-card:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(0,0,0,.4);}
+  .frame-card:hover::before{opacity:1;}
+  .frame-card.selected{border-color:transparent;box-shadow:0 0 0 2px var(--ring),0 18px 44px rgba(255,94,135,.3);}
+  .frame-card canvas{width:100%;border-radius:12px;background:#000;aspect-ratio:4/5;position:relative;z-index:1;
+    box-shadow:0 8px 22px rgba(0,0,0,.45);}
+  .frame-card .meta{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;position:relative;z-index:1;}
+  .frame-card .check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--glass-brd);
+    display:grid;place-items:center;font-size:11px;color:transparent;transition:.2s;}
+  .frame-card.selected .check{background:var(--grad);border-color:transparent;color:#fff;}
+
+  /* Camera stage */
+  .stage{position:relative;width:100%;max-width:380px;aspect-ratio:4/5;background:#000;border-radius:26px;
+    overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--glass-brd);}
+  .stage video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;}
+  .stage::after{content:"";position:absolute;inset:0;border-radius:26px;pointer-events:none;
+    box-shadow:inset 0 0 80px rgba(0,0,0,.4);}
+  .countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:3;
+    font-family:"Poppins";font-size:140px;font-weight:800;color:#fff;
+    text-shadow:0 6px 40px rgba(0,0,0,.7);background:radial-gradient(circle,rgba(0,0,0,.25),rgba(0,0,0,.5));}
+  .countdown.show{display:flex;animation:pop 1s cubic-bezier(.2,.8,.2,1);}
+  @keyframes pop{0%{transform:scale(.3);opacity:0;}25%{transform:scale(1);opacity:1;}
+    75%{transform:scale(1);opacity:1;}100%{transform:scale(1.5);opacity:0;}}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4;}
+  .flash.fire{animation:flash .45s ease;}
+  @keyframes flash{0%{opacity:0;}8%{opacity:.95;}100%{opacity:0;}}
+  .shot-progress{position:absolute;top:16px;left:0;right:0;display:flex;gap:8px;justify-content:center;z-index:2;}
+  .shot-progress .dot{width:30px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);
+    backdrop-filter:blur(4px);transition:.3s;}
+  .shot-progress .dot.done{background:var(--grad);box-shadow:0 2px 8px rgba(255,94,135,.6);}
+  .status-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;
+    background:var(--glass);border:1px solid var(--glass-brd);color:var(--text);font-size:13.5px;font-weight:500;}
+  .status-pill .dotlive{width:8px;height:8px;border-radius:50%;background:#46d369;box-shadow:0 0 8px #46d369;
+    animation:pulse 1.6s infinite;}
+  @keyframes pulse{50%{opacity:.4;}}
+
+  #resultCanvas{max-width:330px;width:100%;border-radius:16px;box-shadow:var(--shadow);
+    border:1px solid var(--glass-brd);animation:rise .5s cubic-bezier(.2,.8,.2,1);}
+  .hint{color:var(--muted);font-size:13.5px;text-align:center;max-width:380px;line-height:1.6;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+  .err{color:#ff8b8b;font-size:14px;text-align:center;max-width:400px;line-height:1.6;}
+  @media(max-width:480px){.brand .logo{width:38px;height:38px;}h1{font-size:23px;}}
+</style>
+</head>
+<body>
+  <div class="brand"><div class="logo">📸</div><h1>Photo Booth · Pride</h1></div>
+  <div class="flagbar"></div>
+  <div class="sub">🏳️‍🌈 Happy Pride Month · เลือกกรอบ · นับถอยหลัง 5–1 · ถ่าย 4 รูป · ดาวน์โหลด</div>
+
+  <div class="stepper" id="stepper">
+    <div class="st on" data-step="0"><span class="num">1</span><span>เลือกกรอบ</span></div>
+    <div class="bar"></div>
+    <div class="st" data-step="1"><span class="num">2</span><span>ถ่ายภาพ</span></div>
+    <div class="bar"></div>
+    <div class="st" data-step="2"><span class="num">3</span><span>บันทึก</span></div>
+  </div>
+
+  <section id="screen-frame" class="screen active">
+    <div class="card">
+      <div class="card-title">เลือกกรอบของคุณ</div>
+      <div class="card-desc">แตะกรอบที่ชอบเพื่อเริ่มต้น</div>
+      <div id="framesGrid" class="frames-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">กล้อง</div>
+      <div class="card-desc">เลือกอุปกรณ์กล้องที่ต้องการใช้</div>
+      <div class="controls">
+        <div class="field"><select id="cameraSelect"><option>กำลังโหลดกล้อง…</option></select></div>
+        <button id="refreshCamBtn" class="ghost icon-btn" title="รีเฟรชรายชื่อกล้อง">🔄</button>
+      </div>
+    </div>
+    <button id="startBtn" class="btn-primary btn-lg" disabled>เลือกกรอบก่อน</button>
+    <div id="frameErr" class="err"></div>
+  </section>
+
+  <section id="screen-capture" class="screen">
+    <div class="stage">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="shot-progress" id="shotProgress"></div>
+      <div class="countdown" id="countdown"></div>
+      <div class="flash" id="flash"></div>
+    </div>
+    <div class="status-pill"><span class="dotlive"></span><span id="captureStatus">กำลังเตรียม…</span></div>
+    <div class="controls">
+      <div class="field"><select id="cameraSelect2"><option>กำลังโหลดกล้อง…</option></select></div>
+      <button id="refreshCamBtn2" class="ghost icon-btn" title="รีเฟรชรายชื่อกล้อง">🔄</button>
+    </div>
+    <div class="row">
+      <button id="beginBtn" class="btn-primary btn-lg">เริ่มถ่าย</button>
+      <button id="cancelBtn" class="ghost">ยกเลิก</button>
+    </div>
+  </section>
+
+  <section id="screen-result" class="screen">
+    <canvas id="resultCanvas"></canvas>
+    <div class="hint">พอใจกับรูปไหม? ดาวน์โหลดเก็บไว้ได้เลย หรือถ่ายใหม่อีกครั้ง</div>
+    <div class="row">
+      <button id="downloadBtn" class="btn-primary">⬇️ ดาวน์โหลด</button>
+      <button id="retakeBtn" class="secondary">🔄 ถ่ายใหม่</button>
+      <button id="newFrameBtn" class="ghost">เปลี่ยนกรอบ</button>
+    </div>
+  </section>
+
+<script>
+const W=1080, H=1350;  // ขนาดไฟล์ผลลัพธ์ (แนวตั้ง 4:5)
+
+/* ---------- helpers รูปทรง ---------- */
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function starPath(ctx,cx,cy,spikes,outer,inner,rot){let r=(rot||0)-Math.PI/2;
+  const step=Math.PI/spikes;ctx.beginPath();
+  for(let i=0;i<spikes;i++){ctx.lineTo(cx+Math.cos(r)*outer,cy+Math.sin(r)*outer);r+=step;
+    ctx.lineTo(cx+Math.cos(r)*inner,cy+Math.sin(r)*inner);r+=step;}ctx.closePath();}
+function fillStar(ctx,cx,cy,r,c,rot){ctx.fillStyle=c;starPath(ctx,cx,cy,5,r,r*0.42,rot||0);ctx.fill();}
+function fillBurst(ctx,cx,cy,r,c){ctx.fillStyle=c;starPath(ctx,cx,cy,11,r,r*0.55,0);ctx.fill();}
+function fillFlower(ctx,cx,cy,r,c){ctx.fillStyle=c;
+  for(let i=0;i<5;i++){const a=i/5*Math.PI*2;ctx.beginPath();
+    ctx.arc(cx+Math.cos(a)*r*0.62,cy+Math.sin(a)*r*0.62,r*0.5,0,7);ctx.fill();}}
+function fillSparkle(ctx,cx,cy,r,c){ctx.fillStyle=c;ctx.beginPath();
+  ctx.moveTo(cx,cy-r);ctx.quadraticCurveTo(cx+r*0.18,cy-r*0.18,cx+r,cy);
+  ctx.quadraticCurveTo(cx+r*0.18,cy+r*0.18,cx,cy+r);
+  ctx.quadraticCurveTo(cx-r*0.18,cy+r*0.18,cx-r,cy);
+  ctx.quadraticCurveTo(cx-r*0.18,cy-r*0.18,cx,cy-r);ctx.closePath();ctx.fill();}
+function fillEllipse(ctx,cx,cy,rx,ry,rot,c){ctx.fillStyle=c;ctx.beginPath();
+  ctx.ellipse(cx,cy,rx,ry,rot,0,7);ctx.fill();}
+function applePath(ctx,cx,cy,w,h){const hw=w/2,hh=h/2,x=cx,y=cy;ctx.beginPath();
+  ctx.moveTo(x,y-hh*0.58);
+  ctx.bezierCurveTo(x-hw*0.42,y-hh*1.06, x-hw*1.04,y-hh*0.72, x-hw,y-hh*0.10);
+  ctx.bezierCurveTo(x-hw*0.99,y+hh*0.52, x-hw*0.52,y+hh*1.02, x-hw*0.17,y+hh*0.86);
+  ctx.bezierCurveTo(x-hw*0.05,y+hh*0.80, x+hw*0.05,y+hh*0.80, x+hw*0.17,y+hh*0.86);
+  ctx.bezierCurveTo(x+hw*0.52,y+hh*1.02, x+hw*0.99,y+hh*0.52, x+hw,y-hh*0.10);
+  ctx.bezierCurveTo(x+hw*1.04,y-hh*0.72, x+hw*0.42,y-hh*1.06, x,y-hh*0.58);
+  ctx.closePath();}
+function coverDraw(ctx,ph,x,y,w,h){const ir=ph.width/ph.height,sr=w/h;let dw,dh,dx,dy;
+  if(ir>sr){dh=h;dw=dh*ir;dx=x-(dw-w)/2;dy=y;}else{dw=w;dh=dw/ir;dx=x;dy=y-(dh-h)/2;}
+  ctx.drawImage(ph,dx,dy,dw,dh);}
+function landscape(ctx,x,y,w,h){const g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,"#bfe3f5");g.addColorStop(1,"#eaf7ff");ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
+  ctx.fillStyle="#a4d65e";ctx.beginPath();ctx.moveTo(x,y+h*0.72);
+  ctx.quadraticCurveTo(x+w*0.3,y+h*0.62,x+w*0.6,y+h*0.72);
+  ctx.quadraticCurveTo(x+w*0.85,y+h*0.8,x+w,y+h*0.7);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.fill();
+  ctx.fillStyle="#7cb518";ctx.beginPath();ctx.moveTo(x,y+h*0.82);
+  ctx.quadraticCurveTo(x+w*0.4,y+h*0.74,x+w,y+h*0.84);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.fill();
+  ctx.fillStyle="#fff";const cx=x+w*0.5,cy=y+h*0.22,r=h*0.07;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.arc(cx+r*1.1,cy+r*0.3,r*0.8,0,7);
+  ctx.arc(cx-r*1.1,cy+r*0.3,r*0.8,0,7);ctx.arc(cx,cy+r*0.4,r*0.9,0,7);ctx.fill();}
+
+/* ====================================================================
+   กรอบที่ 1 : ม่านแดง + ฟิล์มสตริป (4 รูปแนวตั้ง)
+   ==================================================================== */
+function renderCurtain(ctx,photos){
+  // พื้นหลังดำ
+  ctx.fillStyle="#050505";ctx.fillRect(0,0,W,H);
+  // ม่านแดง (ลายจีบแนวตั้ง)
+  for(let x=0;x<W;x+=24){
+    const t=(Math.sin(x*0.13)+1)/2;
+    ctx.fillStyle=`rgb(${20+t*55},${2+t*6},${2+t*6})`;
+    ctx.fillRect(x,0,24,H);
+  }
+  ctx.fillStyle="rgba(0,0,0,.35)";ctx.fillRect(0,0,W,H);
+  // สปอตไลต์สองข้าง
+  [W*0.18,W*0.82].forEach(sx=>{
+    const g=ctx.createRadialGradient(sx,H*0.5,10,sx,H*0.5,420);
+    g.addColorStop(0,"rgba(180,30,30,.85)");g.addColorStop(.6,"rgba(120,10,10,.25)");
+    g.addColorStop(1,"rgba(80,0,0,0)");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  });
+  // กล่องฟิล์มสีดำ
+  const bx=370,bw=340,bTop=70,bBot=1300;
+  ctx.fillStyle="#141414";rr(ctx,bx,bTop,bw,bBot-bTop,10);ctx.fill();
+  // ช่องรูป 4 ช่อง
+  const pad=18,gap=12;
+  const ph=(bBot-bTop-pad*2-gap*3)/4, pw=bw-pad*2;
+  for(let i=0;i<4;i++){
+    const x=bx+pad, y=bTop+pad+i*(ph+gap);
+    ctx.save();rr(ctx,x,y,pw,ph,4);ctx.clip();
+    if(photos&&photos[i])coverDraw(ctx,photos[i],x,y,pw,ph);
+    else landscape(ctx,x,y,pw,ph);
+    ctx.restore();
+  }
+}
+
+/* ====================================================================
+   กรอบที่ 2 : แอปเปิ้ลเหลือง (4 ช่องรูปทรงแอปเปิ้ล แบบ 2x2)
+   ==================================================================== */
+const APPLES=[
+  {cx:270,cy:432,w:450,h:410},
+  {cx:810,cy:432,w:450,h:410},
+  {cx:270,cy:1008,w:450,h:410},
+  {cx:810,cy:1008,w:450,h:410},
+];
+function drawStem(ctx,cx,topY){
+  ctx.strokeStyle="#1f7a2e";ctx.lineCap="round";ctx.lineWidth=30;
+  ctx.beginPath();ctx.moveTo(cx-6,topY+8);ctx.quadraticCurveTo(cx+30,topY-70,cx+18,topY-118);ctx.stroke();
+  // ใบไม้
+  ctx.fillStyle="#1f7a2e";ctx.save();ctx.translate(cx+70,topY-60);ctx.rotate(-0.5);
+  ctx.beginPath();ctx.ellipse(0,0,80,40,0,0,7);ctx.fill();ctx.restore();
+}
+function renderApple(ctx,photos){
+  // พื้นเหลือง + เส้นกริดขาว
+  ctx.fillStyle="#ffd400";ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=5;
+  for(let x=70;x<W;x+=128){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=64;y<H;y+=128){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // ก้าน+ใบ (อยู่หลังแอปเปิ้ล)
+  APPLES.forEach(a=>drawStem(ctx,a.cx,a.cy-a.h*0.55));
+
+  // แอปเปิ้ล: รูปข้างใน + ขอบแดง
+  APPLES.forEach((a,i)=>{
+    ctx.save();applePath(ctx,a.cx,a.cy,a.w,a.h);ctx.clip();
+    if(photos&&photos[i])coverDraw(ctx,photos[i],a.cx-a.w/2,a.cy-a.h/2,a.w,a.h);
+    else{ctx.fillStyle="#ffffff";ctx.fillRect(a.cx-a.w/2-30,a.cy-a.h/2-30,a.w+60,a.h+60);}
+    ctx.restore();
+    applePath(ctx,a.cx,a.cy,a.w,a.h);ctx.lineWidth=18;ctx.strokeStyle="#e01b1b";ctx.lineJoin="round";ctx.stroke();
+  });
+
+  // ลวดลายตกแต่ง (วาดต่อคอลัมน์ ซ้าย=0, ขวา=+540)
+  const RED="#e01b1b",BLUE="#1a6dd6",GREEN="#1f8a3a";
+  function deco(ox){
+    fillFlower(ctx,150+ox,95,34,BLUE);
+    fillFlower(ctx,88+ox,192,26,BLUE);
+    fillEllipse(ctx,410+ox,80,62,24,-0.2,RED);
+    fillSparkle(ctx,486+ox,128,24,BLUE);
+    fillStar(ctx,452+ox,300,30,GREEN,0.2);
+    fillSparkle(ctx,62+ox,654,24,GREEN);
+    fillEllipse(ctx,190+ox,706,74,26,-0.35,RED);
+    fillFlower(ctx,470+ox,640,26,GREEN);
+    fillStar(ctx,470+ox,724,42,RED,0.1);
+    fillFlower(ctx,90+ox,884,28,BLUE);
+    fillStar(ctx,486+ox,902,30,BLUE,0.25);
+    fillStar(ctx,96+ox,1180,42,GREEN,-0.2);
+    fillBurst(ctx,372+ox,1248,76,BLUE);
+    fillSparkle(ctx,60+ox,1268,20,BLUE);
+    fillSparkle(ctx,150+ox,1308,18,BLUE);
+    fillFlower(ctx,196+ox,1296,22,RED);
+  }
+  deco(0);deco(540);
+}
+
+/* ---------- รายการกรอบ (เหลือ 2 อันตามที่ขอ) ---------- */
+const FRAMES=[
+  {name:"ม่านแดง 🎭", render:renderCurtain},
+  {name:"แอปเปิ้ล 🍎", render:renderApple},
+];
+function drawStrip(canvas,frame,photos){
+  canvas.width=W;canvas.height=H;frame.render(canvas.getContext("2d"),photos);
+}
+
+/* ====================================================================
+   LOGIC
+   ==================================================================== */
+let selectedFrame=null, stream=null, capturedPhotos=[];
+const $=id=>document.getElementById(id);
+const screens={frame:$("screen-frame"),capture:$("screen-capture"),result:$("screen-result")};
+const STEP={frame:0,capture:1,result:2};
+function show(n){
+  Object.values(screens).forEach(s=>s.classList.remove("active"));screens[n].classList.add("active");
+  document.querySelectorAll("#stepper .st").forEach(st=>
+    st.classList.toggle("on",+st.dataset.step<=STEP[n]));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function buildFrameCards(){
+  const grid=$("framesGrid");grid.innerHTML="";
+  FRAMES.forEach(f=>{
+    const card=document.createElement("div");card.className="frame-card";
+    const cv=document.createElement("canvas");
+    const meta=document.createElement("div");meta.className="meta";
+    meta.innerHTML=`<span class="check">✓</span><span>${f.name}</span>`;
+    card.appendChild(cv);card.appendChild(meta);grid.appendChild(card);
+    drawStrip(cv,f,null);
+    card.onclick=()=>{document.querySelectorAll(".frame-card").forEach(c=>c.classList.remove("selected"));
+      card.classList.add("selected");selectedFrame=f;
+      $("startBtn").disabled=false;$("startBtn").textContent="เริ่มถ่าย";};
+  });
+}
+let currentDeviceId=null;          // กล้องที่เลือกอยู่ (ใช้ร่วมทั้งสอง dropdown)
+const camSelects=()=>[$("cameraSelect"),$("cameraSelect2")];
+
+async function loadCameras(){
+  try{
+    // ขอสิทธิ์ครั้งแรกเพื่อให้เห็นชื่อกล้องทุกตัว
+    const tmp=await navigator.mediaDevices.getUserMedia({video:true});
+    tmp.getTracks().forEach(t=>t.stop());
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    const cams=devs.filter(d=>d.kind==="videoinput");
+    if(currentDeviceId&&!cams.some(c=>c.deviceId===currentDeviceId))currentDeviceId=null;
+    if(!currentDeviceId&&cams[0])currentDeviceId=cams[0].deviceId;
+    camSelects().forEach(sel=>{
+      sel.innerHTML="";
+      cams.forEach((c,i)=>{const o=document.createElement("option");o.value=c.deviceId;
+        o.textContent=c.label||`กล้อง ${i+1}`;sel.appendChild(o);});
+      if(currentDeviceId)sel.value=currentDeviceId;
+    });
+    $("frameErr").textContent = cams.length ? "" : "ไม่พบกล้องในอุปกรณ์นี้";
+    return cams;
+  }catch(e){
+    $("frameErr").textContent="เข้าถึงกล้องไม่ได้ — กรุณาอนุญาตการใช้กล้อง (ต้องเปิดผ่าน https หรือ localhost)";
+    return [];
+  }
+}
+async function startStream(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{deviceId:currentDeviceId?{exact:currentDeviceId}:undefined,width:{ideal:1280},height:{ideal:1280}},audio:false});
+  $("video").srcObject=stream;await $("video").play();
+  // อัปเดต deviceId จริงจาก track (เผื่อระบบเลือกให้)
+  const tr=stream.getVideoTracks()[0];
+  const real=tr.getSettings&&tr.getSettings().deviceId;
+  if(real){currentDeviceId=real;camSelects().forEach(s=>{if([...s.options].some(o=>o.value===real))s.value=real;});}
+}
+// เปลี่ยนกล้องจาก dropdown ตัวใดก็ได้ -> sync อีกตัว + รีสตาร์ทสตรีมถ้ากำลังถ่าย
+async function onPickCamera(deviceId){
+  currentDeviceId=deviceId;
+  camSelects().forEach(s=>{if([...s.options].some(o=>o.value===deviceId))s.value=deviceId;});
+  if(screens.capture.classList.contains("active")){
+    $("captureStatus").textContent="กำลังสลับกล้อง…";
+    try{await startStream();$("captureStatus").textContent="พร้อมแล้ว กด ‘เริ่มถ่าย’";}
+    catch(e){$("captureStatus").textContent="สลับกล้องไม่สำเร็จ: "+e.message;}
+  }
+}
+function grabFrame(){
+  const v=$("video"),vw=v.videoWidth,vh=v.videoHeight,tr=4/5;let cw,ch;
+  if(vw/vh>tr){ch=vh;cw=ch*tr;}else{cw=vw;ch=cw/tr;}
+  const sx=(vw-cw)/2,sy=(vh-ch)/2;
+  const c=document.createElement("canvas");c.width=cw;c.height=ch;const ctx=c.getContext("2d");
+  ctx.translate(cw,0);ctx.scale(-1,1);ctx.drawImage(v,sx,sy,cw,ch,0,0,cw,ch);return c;
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function updateDots(){const p=$("shotProgress");p.innerHTML="";
+  for(let i=0;i<4;i++){const d=document.createElement("div");d.className="dot"+(i<capturedPhotos.length?" done":"");p.appendChild(d);}}
+async function runCaptureSequence(){
+  capturedPhotos=[];updateDots();$("beginBtn").disabled=true;$("cancelBtn").disabled=true;
+  for(let shot=1;shot<=4;shot++){
+    $("captureStatus").textContent=`รูปที่ ${shot} / 4`;
+    for(let n=5;n>=1;n--){const cd=$("countdown");cd.textContent=n;cd.classList.remove("show");
+      void cd.offsetWidth;cd.classList.add("show");await sleep(1000);}
+    $("countdown").classList.remove("show");
+    const fl=$("flash");fl.classList.remove("fire");void fl.offsetWidth;fl.classList.add("fire");
+    capturedPhotos.push(grabFrame());updateDots();await sleep(700);
+  }
+  $("captureStatus").textContent="เสร็จแล้ว! ✨";$("beginBtn").disabled=false;$("cancelBtn").disabled=false;
+  drawStrip($("resultCanvas"),selectedFrame,capturedPhotos);
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  show("result");
+}
+$("startBtn").onclick=async()=>{if(!selectedFrame)return;show("capture");
+  $("captureStatus").textContent="กำลังเปิดกล้อง…";
+  try{await startStream();$("captureStatus").textContent="พร้อมแล้ว กด ‘เริ่มถ่าย’";}
+  catch(e){$("captureStatus").textContent="เปิดกล้องไม่สำเร็จ: "+e.message;}};
+$("beginBtn").onclick=()=>runCaptureSequence();
+$("cancelBtn").onclick=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}show("frame");};
+$("retakeBtn").onclick=async()=>{show("capture");$("captureStatus").textContent="กำลังเปิดกล้อง…";
+  try{await startStream();$("captureStatus").textContent="พร้อมแล้ว กด ‘เริ่มถ่าย’";}
+  catch(e){$("captureStatus").textContent="เปิดกล้องไม่สำเร็จ: "+e.message;}};
+$("newFrameBtn").onclick=()=>show("frame");
+$("downloadBtn").onclick=()=>{const a=document.createElement("a");
+  a.download="photobooth_"+Date.now()+".png";a.href=$("resultCanvas").toDataURL("image/png");a.click();};
+$("cameraSelect").onchange=e=>onPickCamera(e.target.value);
+$("cameraSelect2").onchange=e=>onPickCamera(e.target.value);
+$("refreshCamBtn").onclick=()=>loadCameras();
+$("refreshCamBtn2").onclick=()=>loadCameras();
+// อัปเดตรายชื่ออัตโนมัติเมื่อเสียบ/ถอดกล้อง
+if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)
+  navigator.mediaDevices.addEventListener("devicechange",()=>loadCameras());
+
+buildFrameCards();loadCameras();
+</script>
+</body>
+</html>
