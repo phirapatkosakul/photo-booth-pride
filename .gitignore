@@ -4,3 +4,4 @@ key.pem
 deploy/
 .DS_Store
 /tmp/
+.claude/
