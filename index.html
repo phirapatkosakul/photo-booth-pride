@@ -479,7 +479,39 @@ function makeImageFrame(name,src,slotRects,overlaySrc){
     ov.onload=()=>{if(typeof redrawPreviews==="function")redrawPreviews();};}
   function mapSlot(s){
     const sw=s.baseW||1080, sh=s.baseH||1350;
-    return {x:s.x/sw*W,y:s.y/sh*H,w:s.w/sw*W,h:s.h/sh*H,r:s.r||2};
+    return {x:s.x/sw*W,y:s.y/sh*H,w:s.w/sw*W,h:s.h/sh*H,r:s.r||2,shape:s.shape||"rect"};
+  }
+  function heartClip(ctx,s){
+    const pts=[];
+    for(let i=0;i<180;i++){
+      const t=Math.PI*2*i/180;
+      const px=16*Math.pow(Math.sin(t),3);
+      const py=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+      pts.push({px,py});
+    }
+    const xs=pts.map(p=>p.px),ys=pts.map(p=>p.py);
+    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+    const inset=Math.min(s.w,s.h)*0.02;ctx.beginPath();
+    pts.forEach((p,i)=>{
+      const x=s.x+inset+(p.px-minX)/(maxX-minX)*(s.w-inset*2);
+      const y=s.y+inset+(p.py-minY)/(maxY-minY)*(s.h-inset*2);
+      if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);
+    });
+    ctx.closePath();
+  }
+  function starClip(ctx,s){
+    const cx=s.x+s.w/2,cy=s.y+s.h/2,outer=Math.min(s.w,s.h)*0.47,inner=outer*0.48;
+    let a=-Math.PI/2;ctx.beginPath();
+    for(let i=0;i<10;i++){
+      const r=i%2?inner:outer,x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+      if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);a+=Math.PI/5;
+    }
+    ctx.closePath();
+  }
+  function clipSlot(ctx,s){
+    if(s.shape==="heart")heartClip(ctx,s);
+    else if(s.shape==="star")starClip(ctx,s);
+    else rr(ctx,s.x,s.y,s.w,s.h,s.r);
   }
   return {name, img:im, ovImg:ov, slots:slotRects,
     render(ctx,photos){
@@ -490,14 +522,14 @@ function makeImageFrame(name,src,slotRects,overlaySrc){
       slotRects.forEach((raw,i)=>{
         const ph=photos&&photos.length?photos[i%photos.length]:null;if(!ph)return;
         const s=mapSlot(raw);
-        ctx.save();rr(ctx,s.x,s.y,s.w,s.h,s.r);ctx.clip();
+        ctx.save();clipSlot(ctx,s);ctx.clip();
         coverDraw(ctx,ph,s.x,s.y,s.w,s.h);ctx.restore();
       });
       // วาดองค์ประกอบที่ต้องอยู่ "บน" รูป (เช่น สติกเกอร์หัวใจที่ล้ำเข้าช่อง)
       if(ov&&ov.complete&&ov.naturalWidth)ctx.drawImage(ov,0,0,W,H);
     }};
 }
-const srcFrame = (x,y,w,h,r=2)=>({x,y,w,h,r,baseW:1333,baseH:1999});
+const srcFrame = (x,y,w,h,r=2,shape="rect")=>({x,y,w,h,r,shape,baseW:1333,baseH:1999});
 
 const FRAMES=[
   {name:"ม่านแดง 🎭", render:renderCurtain},
@@ -515,26 +547,26 @@ const FRAMES=[
     {x:373,y:983, w:330,h:289},
   ],"assets/overlay-pride2.png"),
   makeImageFrame("Cutie Pride ⭐","assets/frame-pride3.png",[
-    srcFrame(10,54,590,590,34),
-    srcFrame(14,706,610,520,34),
-    srcFrame(10,1338,600,520,34),
-    srcFrame(684,310,570,500,34),
-    srcFrame(684,874,570,500,34),
-    srcFrame(684,1438,570,500,34),
-  ]),
+    srcFrame(10,54,590,590,34,"star"),
+    srcFrame(14,706,610,520,34,"star"),
+    srcFrame(10,1338,600,520,34,"star"),
+    srcFrame(684,310,570,500,34,"heart"),
+    srcFrame(684,874,570,500,34,"heart"),
+    srcFrame(684,1438,570,500,34,"heart"),
+  ],"assets/overlay-frame-pride3.png"),
   makeImageFrame("Wonderland 🐇","assets/frame-pride4.png",[
     srcFrame(272,205,800,482,2),
     srcFrame(272,738,800,485,2),
     srcFrame(272,1280,800,480,2),
-  ]),
+  ],"assets/overlay-frame-pride4.png"),
   makeImageFrame("Pastel Heart 💚","assets/frame-pride5.png",[
-    srcFrame(40,187,525,535,38),
-    srcFrame(40,735,525,535,38),
-    srcFrame(40,1282,525,535,38),
+    srcFrame(40,187,525,535,38,"heart"),
+    srcFrame(40,735,525,535,38,"heart"),
+    srcFrame(40,1282,525,535,38,"heart"),
     srcFrame(714,419,527,450,2),
     srcFrame(714,956,527,450,2),
     srcFrame(714,1488,527,320,2),
-  ]),
+  ],"assets/overlay-frame-pride5.png"),
 ];
 function drawStrip(canvas,frame,photos){
   canvas.width=W;canvas.height=H;frame.render(canvas.getContext("2d"),photos);
