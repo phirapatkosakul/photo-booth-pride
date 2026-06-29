@@ -95,7 +95,7 @@
     border-radius:20px;padding:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:12px;
     transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s,box-shadow .2s;overflow:hidden;}
   .frame-card::before{content:"";position:absolute;inset:0;background:var(--grad-soft);opacity:0;transition:.25s;}
-  .frame-card:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(0,0,0,.4);}
+  .frame-card:hover{box-shadow:0 18px 40px rgba(0,0,0,.4);}
   .frame-card:hover::before{opacity:1;}
   .frame-card.selected{border-color:transparent;box-shadow:0 0 0 2px var(--ring),0 18px 44px rgba(255,94,135,.3);}
   .frame-card canvas{width:100%;border-radius:12px;background:#000;aspect-ratio:4/5;position:relative;z-index:1;
@@ -361,7 +361,8 @@ function applePath(ctx,cx,cy,w,h){const hw=w/2,hh=h/2,x=cx,y=cy;ctx.beginPath();
   ctx.bezierCurveTo(x+hw*1.04,y-hh*0.72, x+hw*0.42,y-hh*1.06, x,y-hh*0.58);
   ctx.closePath();}
 function coverDraw(ctx,ph,x,y,w,h){const ir=ph.width/ph.height,sr=w/h;let dw,dh,dx,dy;
-  if(ir>sr){dh=h;dw=dh*ir;dx=x-(dw-w)/2;dy=y;}else{dw=w;dh=dw/ir;dx=x;dy=y-(dh-h)/2;}
+  if(ir>sr){dh=h;dw=dh*ir;}else{dw=w;dh=dw/ir;}
+  dx=x-(dw-w)/2;dy=y-(dh-h)/2;
   ctx.drawImage(ph,dx,dy,dw,dh);}
 function landscape(ctx,x,y,w,h){const g=ctx.createLinearGradient(0,y,0,y+h);
   g.addColorStop(0,"#bfe3f5");g.addColorStop(1,"#eaf7ff");ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
@@ -534,38 +535,38 @@ const srcFrame = (x,y,w,h,r=2,shape="rect")=>({x,y,w,h,r,shape,baseW:1333,baseH:
 const FRAMES=[
   {name:"ม่านแดง 🎭", render:renderCurtain},
   {name:"แอปเปิ้ล 🍎", render:renderApple},
-  makeImageFrame("Pride Month 📣","assets/frame-pride1.png",[
-    {x:350,y:96,  w:380,h:265},
-    {x:350,y:373, w:380,h:304},
-    {x:350,y:690, w:380,h:304},
-    {x:350,y:1006,w:380,h:304},
-  ]),
+  makeImageFrame("Pride Month 📣","assets/Black and White Vintage Fun Photo Booth Instagram Post.png",[
+    {x:350,y:58,   w:380,h:302},
+    {x:350,y:374,  w:380,h:302},
+    {x:350,y:691,  w:380,h:302},
+    {x:350,y:1009, w:380,h:302},
+  ],"assets/overlay-pride1.png"),
   makeImageFrame("Y2K Pride 🌈","assets/frame-pride2.png",[
     {x:373,y:77,  w:330,h:289},
     {x:373,y:379, w:330,h:288},
     {x:373,y:681, w:330,h:289},
     {x:373,y:983, w:330,h:289},
   ],"assets/overlay-pride2.png"),
-  makeImageFrame("Cutie Pride ⭐","assets/frame-pride3.png",[
-    srcFrame(10,54,590,590,34,"star"),
-    srcFrame(14,706,610,520,34,"star"),
-    srcFrame(10,1338,600,520,34,"star"),
-    srcFrame(684,310,570,500,34,"heart"),
-    srcFrame(684,874,570,500,34,"heart"),
-    srcFrame(684,1438,570,500,34,"heart"),
-  ],"assets/overlay-frame-pride3.png"),
+  makeImageFrame("Cutie Pride ⭐","assets/frame-pride3.1.png",[
+    srcFrame(35,428,596,410,2),
+    srcFrame(35,861,596,408,2),
+    srcFrame(35,1299,596,409,2),
+    srcFrame(701,271,596,410,2),
+    srcFrame(701,705,596,410,2),
+    srcFrame(701,1142,596,409,2),
+  ]),
   makeImageFrame("Wonderland 🐇","assets/frame-pride4.png",[
-    srcFrame(272,205,800,482,2),
-    srcFrame(272,738,800,485,2),
-    srcFrame(272,1280,800,480,2),
+    srcFrame(272,74,790,470,2),
+    srcFrame(272,738,790,480,2),
+    srcFrame(272,1280,710,425,2),
   ],"assets/overlay-frame-pride4.png"),
   makeImageFrame("Pastel Heart 💚","assets/frame-pride5.png",[
-    srcFrame(40,187,525,535,38,"heart"),
-    srcFrame(40,735,525,535,38,"heart"),
-    srcFrame(40,1282,525,535,38,"heart"),
-    srcFrame(714,419,527,450,2),
-    srcFrame(714,956,527,450,2),
-    srcFrame(714,1488,527,320,2),
+    srcFrame(42,190,515,520,34,"heart"),
+    srcFrame(42,738,515,520,34,"heart"),
+    srcFrame(42,1286,515,520,34,"heart"),
+    srcFrame(714,420,520,440,2),
+    srcFrame(714,958,520,440,2),
+    srcFrame(714,1490,520,310,2),
   ],"assets/overlay-frame-pride5.png"),
 ];
 function drawStrip(canvas,frame,photos){
