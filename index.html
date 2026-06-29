@@ -477,21 +477,27 @@ function makeImageFrame(name,src,slotRects,overlaySrc){
   let ov=null;
   if(overlaySrc){ov=new Image();ov.src=overlaySrc;
     ov.onload=()=>{if(typeof redrawPreviews==="function")redrawPreviews();};}
+  function mapSlot(s){
+    const sw=s.baseW||1080, sh=s.baseH||1350;
+    return {x:s.x/sw*W,y:s.y/sh*H,w:s.w/sw*W,h:s.h/sh*H,r:s.r||2};
+  }
   return {name, img:im, ovImg:ov, slots:slotRects,
     render(ctx,photos){
       if(im.complete&&im.naturalWidth){ctx.drawImage(im,0,0,W,H);}
       else{const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#2a2a36");g.addColorStop(1,"#15151d");
         ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.fillStyle="#777";ctx.font="28px sans-serif";
         ctx.textAlign="center";ctx.fillText("กำลังโหลดรูปกรอบ…",W/2,H/2);ctx.fillText("(วางไฟล์ใน assets/)",W/2,H/2+40);}
-      slotRects.forEach((s,i)=>{
-        const ph=photos&&photos[i];if(!ph)return;          // ไม่มีรูป = โชว์ภาพต้นฉบับในช่อง
-        ctx.save();rr(ctx,s.x,s.y,s.w,s.h,2);ctx.clip();
+      slotRects.forEach((raw,i)=>{
+        const ph=photos&&photos.length?photos[i%photos.length]:null;if(!ph)return;
+        const s=mapSlot(raw);
+        ctx.save();rr(ctx,s.x,s.y,s.w,s.h,s.r);ctx.clip();
         coverDraw(ctx,ph,s.x,s.y,s.w,s.h);ctx.restore();
       });
       // วาดองค์ประกอบที่ต้องอยู่ "บน" รูป (เช่น สติกเกอร์หัวใจที่ล้ำเข้าช่อง)
       if(ov&&ov.complete&&ov.naturalWidth)ctx.drawImage(ov,0,0,W,H);
     }};
 }
+const srcFrame = (x,y,w,h,r=2)=>({x,y,w,h,r,baseW:1333,baseH:1999});
 
 const FRAMES=[
   {name:"ม่านแดง 🎭", render:renderCurtain},
@@ -508,6 +514,27 @@ const FRAMES=[
     {x:373,y:681, w:330,h:289},
     {x:373,y:983, w:330,h:289},
   ],"assets/overlay-pride2.png"),
+  makeImageFrame("Cutie Pride ⭐","assets/frame-pride3.png",[
+    srcFrame(10,54,590,590,34),
+    srcFrame(14,706,610,520,34),
+    srcFrame(10,1338,600,520,34),
+    srcFrame(684,310,570,500,34),
+    srcFrame(684,874,570,500,34),
+    srcFrame(684,1438,570,500,34),
+  ]),
+  makeImageFrame("Wonderland 🐇","assets/frame-pride4.png",[
+    srcFrame(272,205,800,482,2),
+    srcFrame(272,738,800,485,2),
+    srcFrame(272,1280,800,480,2),
+  ]),
+  makeImageFrame("Pastel Heart 💚","assets/frame-pride5.png",[
+    srcFrame(40,187,525,535,38),
+    srcFrame(40,735,525,535,38),
+    srcFrame(40,1282,525,535,38),
+    srcFrame(714,419,527,450,2),
+    srcFrame(714,956,527,450,2),
+    srcFrame(714,1488,527,320,2),
+  ]),
 ];
 function drawStrip(canvas,frame,photos){
   canvas.width=W;canvas.height=H;frame.render(canvas.getContext("2d"),photos);
