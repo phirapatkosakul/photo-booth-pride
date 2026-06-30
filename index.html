@@ -478,6 +478,11 @@ function makeImageFrame(name,src,slotRects,overlaySrc){
   let ov=null;
   if(overlaySrc){ov=new Image();ov.src=overlaySrc;
     ov.onload=()=>{if(typeof redrawPreviews==="function")redrawPreviews();};}
+  slotRects.forEach(s=>{
+    if(!s.mask)return;
+    s.maskImg=new Image();s.maskImg.src=s.mask;
+    s.maskImg.onload=()=>{if(typeof redrawPreviews==="function")redrawPreviews();};
+  });
   function mapSlot(s){
     const sw=s.baseW||1080, sh=s.baseH||1350;
     return {x:s.x/sw*W,y:s.y/sh*H,w:s.w/sw*W,h:s.h/sh*H,r:s.r||2,shape:s.shape||"rect"};
@@ -509,10 +514,29 @@ function makeImageFrame(name,src,slotRects,overlaySrc){
     }
     ctx.closePath();
   }
+  function softHeartClip(ctx,s){
+    const x=s.x,y=s.y,w=s.w,h=s.h,cx=x+w/2;
+    ctx.beginPath();
+    ctx.moveTo(cx,y+h*0.96);
+    ctx.bezierCurveTo(x+w*0.10,y+h*0.70,x+w*0.00,y+h*0.48,x+w*0.00,y+h*0.26);
+    ctx.bezierCurveTo(x+w*0.00,y+h*0.02,x+w*0.30,y+h*-0.02,cx,y+h*0.22);
+    ctx.bezierCurveTo(x+w*0.70,y+h*-0.02,x+w*1.00,y+h*0.02,x+w*1.00,y+h*0.26);
+    ctx.bezierCurveTo(x+w*1.00,y+h*0.48,x+w*0.90,y+h*0.70,cx,y+h*0.96);
+    ctx.closePath();
+  }
   function clipSlot(ctx,s){
-    if(s.shape==="heart")heartClip(ctx,s);
+    if(s.shape==="softHeart")softHeartClip(ctx,s);
+    else if(s.shape==="heart")heartClip(ctx,s);
     else if(s.shape==="star")starClip(ctx,s);
     else rr(ctx,s.x,s.y,s.w,s.h,s.r);
+  }
+  function maskedPhoto(ctx,ph,s,maskImg){
+    const layer=document.createElement("canvas");layer.width=W;layer.height=H;
+    const lx=layer.getContext("2d");
+    coverDraw(lx,ph,s.x,s.y,s.w,s.h);
+    lx.globalCompositeOperation="destination-in";
+    lx.drawImage(maskImg,0,0,W,H);
+    ctx.drawImage(layer,0,0);
   }
   return {name, img:im, ovImg:ov, slots:slotRects,
     render(ctx,photos){
@@ -523,14 +547,19 @@ function makeImageFrame(name,src,slotRects,overlaySrc){
       slotRects.forEach((raw,i)=>{
         const ph=photos&&photos.length?photos[i%photos.length]:null;if(!ph)return;
         const s=mapSlot(raw);
-        ctx.save();clipSlot(ctx,s);ctx.clip();
-        coverDraw(ctx,ph,s.x,s.y,s.w,s.h);ctx.restore();
+        if(raw.maskImg&&raw.maskImg.complete&&raw.maskImg.naturalWidth){
+          maskedPhoto(ctx,ph,s,raw.maskImg);
+        }else{
+          ctx.save();clipSlot(ctx,s);ctx.clip();
+          coverDraw(ctx,ph,s.x,s.y,s.w,s.h);ctx.restore();
+        }
       });
       // วาดองค์ประกอบที่ต้องอยู่ "บน" รูป (เช่น สติกเกอร์หัวใจที่ล้ำเข้าช่อง)
       if(ov&&ov.complete&&ov.naturalWidth)ctx.drawImage(ov,0,0,W,H);
     }};
 }
 const srcFrame = (x,y,w,h,r=2,shape="rect")=>({x,y,w,h,r,shape,baseW:1333,baseH:1999});
+const maskFrame = (x,y,w,h,mask)=>({x,y,w,h,r:2,shape:"rect",mask,baseW:1333,baseH:1999});
 
 const FRAMES=[
   {name:"ม่านแดง 🎭", render:renderCurtain},
@@ -560,14 +589,14 @@ const FRAMES=[
     srcFrame(348,709,630,439,2),
     srcFrame(348,1184,630,438,2),
   ]),
-  makeImageFrame("Pastel Heart 💚","assets/frame-pride5.png",[
-    srcFrame(42,190,515,520,34,"heart"),
-    srcFrame(42,738,515,520,34,"heart"),
-    srcFrame(42,1286,515,520,34,"heart"),
-    srcFrame(714,420,520,440,2),
-    srcFrame(714,958,520,440,2),
-    srcFrame(714,1490,520,310,2),
-  ],"assets/overlay-frame-pride5.png"),
+  makeImageFrame("Pastel Heart 💚","assets/frame-pride67.png",[
+    srcFrame(58,330,552,388,2),
+    srcFrame(58,750,552,388,2),
+    srcFrame(58,1174,552,388,2),
+    srcFrame(704,418,570,442,2),
+    srcFrame(704,904,570,442,2),
+    srcFrame(704,1372,570,442,2),
+  ],"assets/overlay-pride67.png"),
 ];
 function drawStrip(canvas,frame,photos){
   canvas.width=W;canvas.height=H;frame.render(canvas.getContext("2d"),photos);
